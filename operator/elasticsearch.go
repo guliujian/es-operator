@@ -111,7 +111,6 @@ func (o *ElasticsearchOperator) runWatch(ctx context.Context) {
 		0, // skip resync
 		cache.Indexers{},
 	)
-
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    o.add,
 		UpdateFunc: o.update,
@@ -237,11 +236,12 @@ func (o *ElasticsearchOperator) runAutoscaler(ctx context.Context) {
 					secret, err := o.kube.CoreV1().Secrets(es.ElasticsearchDataSet.Namespace).Get(ctx, es.ElasticsearchDataSet.Spec.SecretName, metav1.GetOptions{})
 					var username, password string
 					if err != nil {
-						username = secret.StringData["username"]
-						password = secret.StringData["password"]
-					} else {
+						o.logger.Error(err)
 						username = ""
 						password = ""
+					} else {
+						username = string(secret.Data["username"])
+						password = string(secret.Data["password"])
 					}
 					// TODO: abstract this
 					client := &ESClient{
@@ -641,14 +641,17 @@ func (o *ElasticsearchOperator) operateEDS(eds *zv1.ElasticsearchDataSet, delete
 	}
 
 	endpoint := o.getElasticsearchEndpoint(eds)
+
 	secret, err := o.kube.CoreV1().Secrets(eds.Namespace).Get(ctx, eds.Spec.SecretName, metav1.GetOptions{})
 	var username, password string
+
 	if err != nil {
-		username = secret.StringData["username"]
-		password = secret.StringData["password"]
-	} else {
+		o.logger.Error(err)
 		username = ""
 		password = ""
+	} else {
+		username = string(secret.Data["username"])
+		password = string(secret.Data["password"])
 	}
 	// TODO: abstract this
 	client := &ESClient{

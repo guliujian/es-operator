@@ -110,7 +110,6 @@ spec:
                 type: object
               secretname:
                 type: string
-                description:  "secret used by operator to communicate to elasticsearch"
               template:
                 description: Template describes the pods that will be created.
                 properties:
