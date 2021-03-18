@@ -44,8 +44,8 @@ type ElasticsearchDataSetSpec struct {
 	Template PodTemplateSpec `json:"template" protobuf:"bytes,3,opt,name=template"`
 
 	// Scaling describes the scaling properties
-	Scaling *ElasticsearchDataSetScaling `json:"scaling,omitempty"`
-
+	Scaling    *ElasticsearchDataSetScaling `json:"scaling,omitempty"`
+	SecretName string                       `json:"secretName,omitempty"`
 	// Template describe the volumeClaimTemplates
 	VolumeClaimTemplates []v1.PersistentVolumeClaim `json:"volumeClaimTemplates,omitempty" protobuf:"bytes,4,rep,name=volumeClaimTemplates"`
 }
