@@ -108,6 +108,8 @@ spec:
                     minimum: 0
                     type: integer
                 type: object
+              secretName:
+                type: string
               template:
                 description: Template describes the pods that will be created.
                 properties:

@@ -234,11 +234,23 @@ func (o *ElasticsearchOperator) runAutoscaler(ctx context.Context) {
 				if es.ElasticsearchDataSet.Spec.Scaling != nil && es.ElasticsearchDataSet.Spec.Scaling.Enabled {
 					endpoint := o.getElasticsearchEndpoint(es.ElasticsearchDataSet)
 
+					secret, err := o.kube.CoreV1().Secrets(es.ElasticsearchDataSet.Namespace).Get(ctx, es.ElasticsearchDataSet.Spec.SecretName, metav1.GetOptions{})
+					var username, password string
+					if err != nil {
+						username = secret.StringData["username"]
+						password = secret.StringData["password"]
+					} else {
+						username = ""
+						password = ""
+					}
+					// TODO: abstract this
 					client := &ESClient{
 						Endpoint: endpoint,
+						Username: username,
+						Password: password,
 					}
 
-					err := o.scaleEDS(ctx, es.ElasticsearchDataSet, es, client)
+					err = o.scaleEDS(ctx, es.ElasticsearchDataSet, es, client)
 					if err != nil {
 						o.logger.Error(err)
 						continue
@@ -629,10 +641,20 @@ func (o *ElasticsearchOperator) operateEDS(eds *zv1.ElasticsearchDataSet, delete
 	}
 
 	endpoint := o.getElasticsearchEndpoint(eds)
-
+	secret, err := o.kube.CoreV1().Secrets(eds.Namespace).Get(ctx, eds.Spec.SecretName, metav1.GetOptions{})
+	var username, password string
+	if err != nil {
+		username = secret.StringData["username"]
+		password = secret.StringData["password"]
+	} else {
+		username = ""
+		password = ""
+	}
 	// TODO: abstract this
 	client := &ESClient{
 		Endpoint: endpoint,
+		Username: username,
+		Password: password,
 	}
 
 	operator := &Operator{

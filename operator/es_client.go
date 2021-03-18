@@ -28,6 +28,8 @@ var (
 type ESClient struct {
 	Endpoint *url.URL
 	mux      sync.Mutex
+	Username string
+	Password string
 }
 
 // ESIndex represent an index to be used in public APIs
@@ -162,7 +164,7 @@ func (c *ESClient) Cleanup(ctx context.Context) error {
 
 // ensures cluster is in green state
 func (c *ESClient) ensureGreenClusterState() error {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Get(c.Endpoint.String() + "/_cluster/health?wait_for_status=green&timeout=60s")
 	if err != nil {
 		return err
@@ -184,7 +186,7 @@ func (c *ESClient) ensureGreenClusterState() error {
 // returns the response of the call to _cluster/settings
 func (c *ESClient) getClusterSettings() (*ESSettings, error) {
 	// get _cluster/settings for current exclude list
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Get(c.Endpoint.String() + "/_cluster/settings")
 	if err != nil {
 		return nil, err
@@ -238,7 +240,7 @@ func (c *ESClient) excludePodIP(pod *v1.Pod) error {
 }
 
 func (c *ESClient) setExcludeIPs(ips string) error {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		SetHeader("Content-Type", "application/json").
 		SetBody([]byte(
 			fmt.Sprintf(
@@ -257,7 +259,7 @@ func (c *ESClient) setExcludeIPs(ips string) error {
 }
 
 func (c *ESClient) updateAutoRebalance(value string) error {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		SetHeader("Content-Type", "application/json").
 		SetBody([]byte(
 			fmt.Sprintf(
@@ -279,7 +281,7 @@ func (c *ESClient) updateAutoRebalance(value string) error {
 func (c *ESClient) waitForEmptyEsNode(ctx context.Context, pod *v1.Pod) error {
 	// TODO: implement context handling
 	podIP := pod.Status.PodIP
-	_, err := resty.New().
+	_, err := resty.New().SetBasicAuth(c.Username, c.Password).
 		SetRetryCount(defaultRetryCount).
 		SetRetryWaitTime(defaultRetryWaitTime).
 		SetRetryMaxWaitTime(defaultRetryMaxWaitTime).
@@ -319,7 +321,7 @@ func (c *ESClient) waitForEmptyEsNode(ctx context.Context, pod *v1.Pod) error {
 }
 
 func (c *ESClient) GetNodes() ([]ESNode, error) {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Get(c.Endpoint.String() + "/_cat/nodes?h=ip,dup&format=json")
 	if err != nil {
 		return nil, err
@@ -353,7 +355,7 @@ func (c *ESClient) GetNodes() ([]ESNode, error) {
 }
 
 func (c *ESClient) GetShards() ([]ESShard, error) {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Get(c.Endpoint.String() + "/_cat/shards?h=index,ip&format=json")
 
 	if err != nil {
@@ -372,7 +374,7 @@ func (c *ESClient) GetShards() ([]ESShard, error) {
 }
 
 func (c *ESClient) GetIndices() ([]ESIndex, error) {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Get(c.Endpoint.String() + "/_cat/indices?h=index,pri,rep&format=json")
 
 	if err != nil {
@@ -422,7 +424,7 @@ func (c *ESClient) UpdateIndexSettings(indices []ESIndex) error {
 
 	for _, index := range indices {
 		c.logger().Infof("Setting number_of_replicas for index '%s' to %d.", index.Index, index.Replicas)
-		resp, err := resty.New().R().
+		resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 			SetHeader("Content-Type", "application/json").
 			SetBody([]byte(
 				fmt.Sprintf(
@@ -448,7 +450,7 @@ func (c *ESClient) UpdateIndexSettings(indices []ESIndex) error {
 }
 
 func (c *ESClient) CreateIndex(indexName, groupName string, shards, replicas int) error {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		SetHeader("Content-Type", "application/json").
 		SetBody([]byte(
 			fmt.Sprintf(
@@ -470,7 +472,7 @@ func (c *ESClient) CreateIndex(indexName, groupName string, shards, replicas int
 }
 
 func (c *ESClient) DeleteIndex(indexName string) error {
-	resp, err := resty.New().R().
+	resp, err := resty.New().SetBasicAuth(c.Username, c.Password).R().
 		Delete(fmt.Sprintf("%s/%s", c.Endpoint.String(), indexName))
 	if err != nil {
 		return err
